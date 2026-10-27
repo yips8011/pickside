@@ -20,6 +20,33 @@
 
 ---
 
+## 界面预览
+
+> 截图取自本地开发环境（Android），数据均为演示数据；点击图片查看大图。
+
+<table>
+  <tr>
+    <td align="center"><a href="docs/screenshots/01-home-feed.jpg"><img src="docs/screenshots/01-home-feed.jpg" width="180" alt="首页信息流"></a><br><sub>首页 · 信息流</sub></td>
+    <td align="center"><a href="docs/screenshots/02-vote-ratio.jpg"><img src="docs/screenshots/02-vote-ratio.jpg" width="180" alt="实时投票比例"></a><br><sub>首页 · 实时比例</sub></td>
+    <td align="center"><a href="docs/screenshots/03-share-hint.jpg"><img src="docs/screenshots/03-share-hint.jpg" width="180" alt="分享引导"></a><br><sub>分享引导</sub></td>
+    <td align="center"><a href="docs/screenshots/04-poll-detail.jpg"><img src="docs/screenshots/04-poll-detail.jpg" width="180" alt="投票详情与结果"></a><br><sub>投票详情 · 结果</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/05-poll-comments.jpg"><img src="docs/screenshots/05-poll-comments.jpg" width="180" alt="评论区与立场"></a><br><sub>评论区 · 立场</sub></td>
+    <td align="center"><a href="docs/screenshots/06-anonymous-participants.jpg"><img src="docs/screenshots/06-anonymous-participants.jpg" width="180" alt="匿名参与者"></a><br><sub>匿名参与者</sub></td>
+    <td align="center"><a href="docs/screenshots/07-notifications.jpg"><img src="docs/screenshots/07-notifications.jpg" width="180" alt="通知中心"></a><br><sub>通知 · 互动消息</sub></td>
+    <td align="center"><a href="docs/screenshots/08-system-notifications.jpg"><img src="docs/screenshots/08-system-notifications.jpg" width="180" alt="系统通知"></a><br><sub>通知 · 系统消息</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/09-profile-menu.jpg"><img src="docs/screenshots/09-profile-menu.jpg" width="180" alt="我的页面"></a><br><sub>我的 · 功能入口</sub></td>
+    <td align="center"><a href="docs/screenshots/10-profile-recognition.jpg"><img src="docs/screenshots/10-profile-recognition.jpg" width="180" alt="获得的认可"></a><br><sub>我的 · 获得认可</sub></td>
+    <td align="center"><a href="docs/screenshots/11-admin-users.jpg"><img src="docs/screenshots/11-admin-users.jpg" width="180" alt="后台用户管理"></a><br><sub>后台 · 用户管理</sub></td>
+    <td align="center"><a href="docs/screenshots/12-admin-roles.jpg"><img src="docs/screenshots/12-admin-roles.jpg" width="180" alt="后台权限管理"></a><br><sub>后台 · 权限管理</sub></td>
+  </tr>
+</table>
+
+---
+
 ## 功能特性
 
 **投票**

@@ -1,0 +1,470 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  GUEST
+  USER
+  REVIEWER
+  REPORT_HANDLER
+  AD_MANAGER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+enum PollStatus {
+  PUBLISHED
+  PENDING_REVIEW
+  COMMENT_LOCKED
+  LIKE_DISABLED
+  SHARE_DISABLED
+  DELETED
+}
+
+enum TargetType {
+  POLL
+  COMMENT
+  USER
+}
+
+enum ReportReason {
+  SPAM
+  ILLEGAL
+  HARASSMENT
+  PORNOGRAPHIC
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  REJECTED
+}
+
+enum CommentReactionType {
+  LIKE
+  DISLIKE
+}
+
+enum AdminPermission {
+  REPORT_MANAGE
+  USER_BAN
+  USER_DELETE
+  POLL_MODERATE
+  COMMENT_MODERATE
+  AD_MANAGE
+  ANNOUNCEMENT_MANAGE
+  ROLE_MANAGE
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  uid              Int               @unique
+  username         String            @unique
+  passwordHash     String
+  nickname         String
+  avatarUrl        String?
+  bio              String?
+  badge            String?
+  role             UserRole          @default(USER)
+  customRoleId     Int?
+  customRole       CustomRole?       @relation("CustomRoleUsers", fields: [customRoleId], references: [id])
+  status           UserStatus        @default(ACTIVE)
+  isMuted          Boolean           @default(false)
+  mutedUntil       DateTime?
+  mutedReason      String?
+  pollCount        Int               @default(0)
+  receivedLikes    Int               @default(0)
+  reputation       Int               @default(100)
+  followingCount   Int               @default(0)
+  followerCount    Int               @default(0)
+  refreshHash      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  polls            Poll[]
+  votes            Vote[]
+  comments         Comment[]
+  favorites        Favorite[]
+  pollDislikes     PollDislike[]
+  reports          Report[]          @relation("Reporter")
+  commentReactions CommentReaction[]
+  handledReports   Report[]          @relation("ReportHandler")
+  notifications    Notification[]
+  following        Follow[]          @relation("Follower")
+  followers        Follow[]          @relation("Following")
+  blockedUsers     Block[]           @relation("Blocker")
+  blockedBy        Block[]           @relation("Blocked")
+  setting          UserSetting?
+  topicFollows     TopicFollow[]
+  pollDrafts       PollDraft[]
+  auditLogs        AuditLog[]
+  createdRoles     CustomRole[]      @relation("RoleCreator")
+  uploads          AppUpload[]
+  appFeedbacks     AppFeedback[]
+}
+
+model CustomRole {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  badge       String
+  badgeColor  String            @default("#EEF2FF")
+  permissions AdminPermission[] @default([])
+  createdById Int?
+  createdBy   User?             @relation("RoleCreator", fields: [createdById], references: [id])
+  users       User[]            @relation("CustomRoleUsers")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Poll {
+  id                    Int           @id @default(autoincrement())
+  shareCode             String?       @unique
+  title                 String
+  description           String?
+  authorId              Int
+  author                User          @relation(fields: [authorId], references: [id])
+  isAnonymous           Boolean       @default(false)
+  allowAnonymousVote    Boolean       @default(true)
+  allowAnonymousComment Boolean       @default(true)
+  allowComment          Boolean       @default(true)
+  allowLike             Boolean       @default(true)
+  allowShare            Boolean       @default(true)
+  endAt                 DateTime?
+  status                PollStatus    @default(PUBLISHED)
+  viewCount             Int           @default(0)
+  voteCount             Int           @default(0)
+  commentCount          Int           @default(0)
+  likeCount             Int           @default(0)
+  dislikeCount          Int           @default(0)
+  favoriteCount         Int           @default(0)
+  imageUrls             String[]      @default([])
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  deletedAt             DateTime?
+  options               PollOption[]
+  votes                 Vote[]
+  comments              Comment[]
+  favorites             Favorite[]
+  dislikes              PollDislike[]
+  topicId               Int?
+  topic                 Topic?        @relation(fields: [topicId], references: [id])
+  reviewReason          String?
+  editRequested         Boolean       @default(false)
+  editApproved          Boolean       @default(false)
+
+  @@index([createdAt])
+  @@index([voteCount, commentCount, likeCount])
+  @@index([authorId])
+}
+
+model PollOption {
+  id        Int      @id @default(autoincrement())
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+  color     String
+  sortOrder Int
+  voteCount Int      @default(0)
+  votes     Vote[]
+  createdAt DateTime @default(now())
+
+  @@index([pollId])
+}
+
+model Vote {
+  id          Int        @id @default(autoincrement())
+  pollId      Int
+  poll        Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId    Int
+  option      PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  isAnonymous Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@unique([pollId, userId])
+  @@index([optionId])
+}
+
+model Comment {
+  id           Int               @id @default(autoincrement())
+  pollId       Int
+  poll         Poll              @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  authorId     Int
+  author       User              @relation(fields: [authorId], references: [id])
+  parentId     Int?
+  content      String
+  isAnonymous  Boolean           @default(false)
+  isFolded     Boolean           @default(false)
+  likeCount    Int               @default(0)
+  dislikeCount Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
+  reactions    CommentReaction[]
+
+  @@index([pollId, createdAt])
+  @@index([parentId])
+}
+
+model CommentReaction {
+  id        Int                 @id @default(autoincrement())
+  userId    Int
+  user      User                @relation(fields: [userId], references: [id])
+  commentId Int
+  comment   Comment             @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reaction  CommentReactionType
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([userId, commentId])
+  @@index([commentId, reaction])
+}
+
+model Like {
+  id         Int        @id @default(autoincrement())
+  userId     Int
+  targetType TargetType
+  targetId   Int
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pollId])
+}
+
+model PollDislike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pollId])
+  @@index([pollId])
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Block {
+  id        Int      @id @default(autoincrement())
+  blockerId Int
+  blockedId Int
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id])
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model UserSetting {
+  id                  Int      @id @default(autoincrement())
+  userId              Int      @unique
+  user                User     @relation(fields: [userId], references: [id])
+  darkMode            Boolean  @default(false)
+  notifyComments      Boolean  @default(true)
+  notifyLikes         Boolean  @default(true)
+  notifyFollows       Boolean  @default(true)
+  notifyReports       Boolean  @default(true)
+  screenshotShareHint Boolean  @default(true)
+  blockedKeywords     String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Topic {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  slug        String        @unique
+  category    String?
+  description String?
+  heat        Int           @default(0)
+  pollCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  polls       Poll[]
+  followers   TopicFollow[]
+
+  @@index([heat, pollCount])
+}
+
+model TopicFollow {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  topicId   Int
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@index([topicId])
+}
+
+model PollDraft {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  user                  User      @relation(fields: [userId], references: [id])
+  title                 String
+  description           String?
+  options               String[]  @default([])
+  isAnonymous           Boolean   @default(false)
+  allowAnonymousVote    Boolean   @default(false)
+  allowAnonymousComment Boolean   @default(false)
+  endAt                 DateTime?
+  topicName             String?
+  templateKey           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model Report {
+  id         Int          @id @default(autoincrement())
+  reporterId Int
+  reporter   User         @relation("Reporter", fields: [reporterId], references: [id])
+  targetType TargetType
+  targetId   Int
+  reason     ReportReason
+  detail     String?
+  status     ReportStatus @default(PENDING)
+  handlerId  Int?
+  handler    User?        @relation("ReportHandler", fields: [handlerId], references: [id])
+  result     String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+model Notification {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id])
+  type       String
+  title      String
+  body       String
+  targetType TargetType?
+  targetId   Int?
+  isRead     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+model AdPlacement {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  title     String
+  body      String?
+  imageUrl  String?
+  linkUrl   String?
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id              Int      @id @default(autoincrement())
+  key             String   @unique
+  title           String
+  body            String
+  enabled         Boolean  @default(true)
+  showEveryLaunch Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AppUpdateConfig {
+  id            Int      @id @default(autoincrement())
+  platform      String   @unique @default("android")
+  latestVersion String   @default("1.0.0")
+  latestBuild   Int      @default(1)
+  minBuild      Int      @default(1)
+  forceUpdate   Boolean  @default(false)
+  enabled       Boolean  @default(false)
+  title         String   @default("发现新版本")
+  releaseNotes  String   @default("")
+  updateUrl     String   @default("")
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+}
+
+model AppFeedback {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category    String
+  content     String
+  contact     String?
+  includeLogs Boolean  @default(false)
+  logs        String?
+  appVersion  String?
+  buildNumber Int?
+  platform    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([category, createdAt])
+}
+
+model AppUpload {
+  id           Int      @id @default(autoincrement())
+  ownerId      Int
+  owner        User     @relation(fields: [ownerId], references: [id])
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  createdAt    DateTime @default(now())
+
+  @@index([ownerId, createdAt])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String
+  target    String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+}

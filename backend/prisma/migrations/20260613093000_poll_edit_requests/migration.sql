@@ -1,0 +1,3 @@
+ALTER TABLE "Poll"
+ADD COLUMN "editRequested" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "editApproved" BOOLEAN NOT NULL DEFAULT false;
